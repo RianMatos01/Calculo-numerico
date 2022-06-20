@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en" class="js-focus-visible">
+<head>
+    <title>FALSA POSIÇÃO</title>
+    <link rel='icon' href='https://freeiconshop.com/wp-content/uploads/edd/code-flat.png'> <!--ICONE-->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+
+
+<style>
+  form {
+    width: 280px;
+    position: absolute;
+    left: 30px;
+    top: 80px;
+  }
+  .form-field{
+    margin-bottom: 8px;
+  }
+ 
+  form input {
+    font-family: Arial;
+    width: 100%;
+    outline: none;
+    background-color: #fff;
+    border-radius: 15px;
+    border: none;
+    display: block;
+    padding: 0.75rem 0rem;
+    box-shadow: 0px 3px 6px rgba(0, 0, 0, 0.16);
+    font-size: 17px;
+    color: #4A4A4A;
+    text-indent: 40px;
+  }
+  form .btn {
+    outline: none;
+    border: none;
+    cursor: pointer;
+    display: inline-block;
+    margin: auto;
+    padding: 0.75rem 2.5rem;
+    text-align: left;
+    background-color: #47AB11;
+    color: #fff;
+    border-radius: 15px;
+    box-shadow: 0px 3px 6px rgba(0, 0, 0, 0.16);
+    font-size: 18px;
+  }
+  h1{
+    position: absolute;
+    top: 0px;
+    left: 500px;
+    color: #616060;
+  }
+  th, td {
+    padding: 4px;
+    text-align: center;
+    font-family: Arial;
+  }
+  .fixarRodape {
+    bottom: 0;
+    position: fixed;
+    width: 100%;
+    text-align: center;
+    font-size: 16px;
+  }
+
+  .scrollTable{
+    position: absolute; 
+    left: 500px;
+    top: 80px;
+    width: 800px;
+    height: 320px;
+    overflow-y: auto;
+    overflow-x: auto;
+   }
+   #tabela_iteracoes{
+    color: #ffffff;
+    background-color: #9b1200;
+    border-collapse: collapse;
+    width: 85%;
+   }
+
+   #chartContainer{
+    position: absolute;
+    top: 470px;
+    left: 600px;
+    width: 600px;
+    height: 500px;
+   }
+   #root{
+    position: absolute;
+    top: 330px;
+    left: 10px;
+    width: 500px;
+    height: 300px;
+   }
+
+</style>
+<body>
+
+<main>  
+<h1>Metodo da falsa posição</h1>
+<iframe name="dummyframe" id="dummyframe" style="display: none;"></iframe>
+  <form target="dummyframe">
+     <input class="form-field" name="inFuncao" type="text" id="input_function" placeholder="Função" autocomplete="off"/>
+     <input class="form-field" name="intervalo_ini_a" type="number" step="0.000001" id="input_a" placeholder="Intervalo inicial (a)" autocomplete="off"/>
+     <input class="form-field" name="intervalo_ini_b" type="number" step="0.000001" id="input_b" placeholder="Intervalo inicial (b)" autocomplete="off"/>
+     <input class="form-field" name="inprecisao" type="text" id="input_precisao" placeholder="Precisão" autocomplete="off"/>
+     <input class="btn" type="submit" id="bt_calcular" value="     Calcular" onclick="main()">
+  </form>
+
+  <div class="scrollTable">
+    <table id="tabela_iteracoes" border="1" cellpadding="1">
+      <tr>
+        <th><b>k</b></th>
+        <th><b>a</b></th>
+        <th><b>f(a)</b></th>
+        <th><b>b</b></th>
+        <th><b>f(b)</b></th>
+        <th><b>x_k</b></th>
+        <th><b>f(x_k)</b></th>
+        <th><b>|x-x_ant|</b></th>
+      </tr>
+    </table>
+   </div>
+
+   <div id="chartContainer">
+    <canvas id="line-chart"></canvas> <!-- Canvas para plotar grafico de iteracoes -->
+   </div>
+
+   <div id="root">
+    <canvas id="aaaa"></canvas> <!-- Canvas para plotar grafico da funcao -->
+   </div>
+
+   
+   <footer class="fixarRodape">
+    <p>Autor: Rian de Matos, IFMG - Campus Betim</p> 
+   </footer>
+   
+  </main> 
+
+</body>
+
+<!--Scripts externos para criar graficos, funcoes matematicas etc...-->
+<script src="https://cdn.jsdelivr.net/npm/nerdamer@latest/nerdamer.core.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/nerdamer@latest/Algebra.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/nerdamer@latest/Calculus.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/nerdamer@latest/Solve.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.8.0/chart.min.js"></script>
+<script src="https://unpkg.com/function-plot@1.22.2/dist/function-plot.js"></script>
+
+<script lang="javascript">
+/*
+@ALGORITMO CRIADO POR RIAN MATOS, ENG DE CONTROLE E AUTOMACAO IFMG-BETIM;
+@DISCIPLINA DE CALCULO NUMERICO;
+@18/06/2022;
+@PARAMETROS PODEM SER ALTERADOS PARA MELHORAR A PRECISAO;
+@TODAS* AS LINHAS DE CODIGO PRINCIPAIS ESTAO COMENTADAS PARA FACILICAR O ENTENDIMENTO;
+*/
+
+
+function plotarGraficos(dados, ref, functionToPlot){
+  new Chart(document.getElementById("line-chart").getContext('2d'), {
+  type: 'line',
+  data: {
+    labels: ref,
+    datasets: [{ 
+        data: dados,
+        label: "Valor da raiz",
+        borderColor: "#fb5200",
+        fill: false
+      }]
+  },
+  options: {
+    scales:{
+      x: {
+         title:{
+          display: true,
+          text: 'Nº de Iterações'
+         }
+      },
+      y: {
+         title:{
+          display: true,
+          text: 'Valor aproximado'
+         }
+      }  
+   }
+ }
+});
+
+const options = {
+    target: '#root',
+    width: 500,
+    height: 300,
+    xAxis: { domain: [0, 3] },
+    yAxis: { domain: [0, 5] },
+    grid: true,
+    data: [
+      {
+        fn: functionToPlot,
+        graphType: 'polyline'
+      },
+    ]
+  }
+
+functionPlot(options)
+var input = document.querySelector('#n')
+input.addEventListener('change', () => {
+  options.data[1].nSamples = input.value
+  functionPlot(options)
+})
+}
+  
+  function moduleOf(valor){
+    var answer = valor;
+    //caso o numero seja negativo multiplica por '-1', assim sempre sera positiva a resposta;
+    if(valor < 0) answer = valor*-1;
+    return answer;
+  }
+
+  function addRow(id_tabela, c1, c2, c3, c4, c5, c6, c7, c8){
+    //parametros para criar tabela;
+    var table = document.getElementById(id_tabela);
+    var rowCount = table.rows.length;
+    var row = table.insertRow(rowCount);
+      //adiciona itens na tabela;
+      row.insertCell(0).innerHTML= c1;
+      row.insertCell(1).innerHTML= c2;
+      row.insertCell(2).innerHTML= c3;
+      row.insertCell(3).innerHTML= c4;
+      row.insertCell(4).innerHTML= c5;
+      row.insertCell(5).innerHTML= c6;
+      row.insertCell(6).innerHTML= c7;
+      if(c1 == 0)
+      row.insertCell(7).innerHTML= "NAN"; //como a primeira iteracao nao se sabe a precisao escreve 'NAN' na tabela;
+      else
+      row.insertCell(7).innerHTML= c8;
+
+  }
+
+  function thisRangeConverge(a, b, funcaoEntrada){
+    var zeros = 6; //quantidade de zeros a serem considerados;
+    var answer = new Array(2); //array para armazenar os novos valores caso os dados nao convergirem;
+    answer[0] = a; answer[1] = b; //inicia com os valores de entrada como resposta caso o intervalo seja valido ele so retorna ela.
+    var condition; //vai armazenar f(a)*f(b);
+    var range = 10; //essa variavel define de quanto ate quanto [-range, +range] pode-se obter uma nova aproximacao;
+    var precisao = 1; //essa variavel define a precisao da nva aproximacao, ex: 'precisao = 0.5' vai testar de 0.5 em 0.5;
+    var j;
+    var aux;
+    var ref = 0; //valor central de busca; [-a ,<- 'ref' ->, +b];
+    a = functionValueTo(a, funcaoEntrada) //calcula do valor de f(a);
+      a = parseFloat(a.toFixed(zeros)); //cortando tudo apos a sexta casa decimal;
+    
+    b = functionValueTo(b, funcaoEntrada) //calcula do valor de f(b);
+      b = parseFloat(b.toFixed(zeros)); //cortando tudo apos a sexta casa decimal;
+     
+     condition = a*b; // f(a)*f(b);
+
+     //Caso o intervalo nao atenda vai ser gerado um novo intervalo funcional;
+     if(condition > 0){
+      for(let i = precisao; i <= range; i+=precisao){
+           j = -1*i; //referencia para a busca no espaco negativo;
+           
+           a = functionValueTo(j, funcaoEntrada); //calcula do valor de f(a) -> novo intervalo;
+           aux = functionValueTo(ref, funcaoEntrada); //calcula do valor de f(x) -> novo intervalo;
+           
+            if(a*aux < 0){
+               answer[0] = j; //intervalo inicial;
+               answer[1] = ref; // intervalo final;
+               alert("O intervalo inicial dado é ruim, um novo mais eficiente foi calculado. Novo intervalo ["+answer[0]+", "+answer[1]+"]");
+                break; //sai do loop;
+            }
+
+           b = functionValueTo(i, funcaoEntrada) //calcula do valor de f(b) -> novo intervalo;
+           aux = functionValueTo(ref, funcaoEntrada); //calcula do valor de f(x) -> novo intervalo;
+
+            if(b*aux < 0){
+               answer[0] = ref; //intervalo inicial;
+               answer[1] = i; // intervalo final;
+               alert("O intervalo inicial dado é ruim, um novo mais eficiente foi calculado. Novo intervalo ["+answer[0]+", "+answer[1]+"]");
+                break; //sai do loop;
+            }
+      //caso nao encontre convergencia no range;
+      if(i == range)
+      alert("O intervalo dado é ruim, e nenhuma convergência foi encontrada no intervalo ["+(-1*range)+","+range+"]");
+      }
+    }
+return answer;
+}
+  
+  function functionValueTo(variavel, funcaoEntrada){
+     //reconhecendo a funcao de entrada;
+     nerdamer.setFunction('f', ['x'], funcaoEntrada);
+     //cria o formato da funcao e resolve ela;
+     var aux = nerdamer('f(' + variavel + ')').evaluate().toString();
+     //como a funcao acima retorna fracao como uma string voltamos ela para decimal e retiramos o '/';
+     var answer = eval(aux); 
+     //retornamos o valor calculado;
+     return answer;
+  }
+
+  function solveMyNightmare(valor_a, valor_b, f__a, f__b){
+    //calcula equacao falta posicao;
+    var ans = (valor_a*f__b) - (valor_b*f__a);  
+        ans = ans/(f__b - f__a); 
+    //retorna o resultado;  
+    return ans;
+  }
+
+  function formatFunction(_function){
+     var x = _function;
+     //o algoritmo que plota os graficos nao reconhece o numero de euler como sendo uma constante.
+     //ele reconhece como uma variavel, sendo assim essa funcao troca o 'e', pelo seu respectivo valor com 18 casas decimais.
+     var answer = x.replace("e","2.718281828459045235");
+    return answer;
+  }
+  
+  function main(){  
+     //variaveis para armazenar os valores dinamicos;
+     var k = 0; 
+     var x_k;
+     var int_a;
+     var int_b;
+     var funcaoEntrada;
+     var precisao;
+     var precisao_atual;
+     var f_a, f_b, f_xk;
+     var temp = 0;
+     const max_iterations = 30; //maximo de iteracoes que podem ser executadas;
+     const zeros = 6; //quantidade de casas decimais que vao ser aceitas;
+     var data_array = new Array(max_iterations); //cria array de dados para plotar no grafico;
+     var data_array_ref = new Array(max_iterations); //cria array de referencia para plotar no grafico;
+     var newRange = new Array(2); //cria array com o novo Range se necessario;
+     
+     funcaoEntrada = nerdamer(input_function.value).toString(); //funcao entregue no form;
+     int_a = input_a.value.toString(); //valor inicial 'a' entregue no form;
+     int_b = input_b.value.toString(); //valor inicial 'b' entregue no form;
+     precisao = parseFloat(input_precisao.value); //pega 'precisao' no form e transforma em um float;
+     precisao_atual = 10; //valor qualquer apenas para referencia do while();
+     
+     newRange = thisRangeConverge(int_a, int_b, funcaoEntrada); //Verifica se o intervalo dado converge, se nao ele calcula um novo;
+     int_a = newRange[0];
+     int_b = newRange[1];
+
+       while(precisao_atual > precisao){
+
+        f_a = functionValueTo(int_a, funcaoEntrada) //calcula do valor de f(a);
+           f_a = parseFloat(f_a.toFixed(zeros)); //cortando tudo apos a sexta casa decimal;
+      
+        f_b = functionValueTo(int_b, funcaoEntrada) //calcula do valor de f(b);
+           f_b = parseFloat(f_b.toFixed(zeros)); //cortando tudo apos a sexta casa decimal;
+        
+        x_k = solveMyNightmare(int_a, int_b, f_a, f_b) //calcula valor aproximado da raiz;
+           x_k = parseFloat(x_k.toFixed(zeros)); //cortando tudo apos a sexta casa decimal;
+     
+        f_xk = functionValueTo(x_k, funcaoEntrada) //calcula do valor de f(x_k);
+          f_xk = parseFloat(f_xk.toFixed(zeros)); //cortando tudo apos a sexta casa decimal;
+        
+        precisao_atual = moduleOf(x_k - temp); //tira o modulo
+        precisao_atual = parseFloat(precisao_atual.toFixed(zeros)); //atualiza a precisao atual e remove tudo apos a sexta casa decimal;
+        
+       
+        temp = x_k; //guarda o x_k anterior para calcular a precisao atual;
+
+        //adiciona iteracao na tabela;
+        addRow('tabela_iteracoes', k, int_a, f_a, int_b, f_b, x_k, f_xk, precisao_atual);
+        
+        if(f_xk < 0) int_a = x_k; //se o meu 'f(x_k)' for negativo, o intervalo 'a' recebe o valor de 'x_k';
+        else if(f_xk > 0) int_b = x_k; //se o meu 'f(x_k)' for positivo, o intervalo 'b' recebe o valor de 'x_k';
+        
+        data_array[k] = x_k; //armazena o valor aproximado da raiz no array;
+        data_array_ref[k] = k; //armazena o valor de 'k' no array para referencia no grafico;
+
+        k+=1; //adiciona 1 no contador de iteracoes;
+        
+        //para evitar loops infinitos existe a variavel 'max_iterations' que limita a quantidade de execucoes;
+        //caso 'k' seja maior ou igual ela, o algoritmo encerra e apresenta a mensagem que nao obteve convergencia;
+        if(k >= max_iterations){
+          alert("Limite de iteracoes atingido(" + max_iterations +")");
+          break;
+        }
+       }
+       //resize nos arrays para remover espacos alocados com NULL;
+       data_array.length = k;
+       data_array_ref.length = k;
+       //formatando a funcao de entrada;
+       var h = formatFunction(funcaoEntrada);
+       //plota o grafico com os dados nos arrays;
+       plotarGraficos(data_array, data_array_ref, h);
+  }
+
+
+</script>
+</html>
